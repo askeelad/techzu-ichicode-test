@@ -3,7 +3,7 @@ import { Text } from 'react-native';
 import { COLORS, FONTS, FONT_SIZE } from '../../src/constants';
 
 const TabIcon = ({ emoji, focused }: { emoji: string; focused: boolean }) => (
-  <Text style={{ fontSize: FONT_SIZE.lg, opacity: focused ? 1 : 0.5 }}>{emoji}</Text>
+  <Text style={{ fontSize: FONT_SIZE.xxl, opacity: focused ? 1 : 0.5 }}>{emoji}</Text>
 );
 
 export default function AppLayout() {
@@ -15,14 +15,14 @@ export default function AppLayout() {
           backgroundColor: COLORS.backgroundSecondary,
           borderTopColor: COLORS.border,
           borderTopWidth: 1,
-          height: 60,
-          paddingBottom: 8,
+          height: 70,
+          paddingHorizontal: 8,
         },
         tabBarActiveTintColor: COLORS.primary,
         tabBarInactiveTintColor: COLORS.textMuted,
         tabBarLabelStyle: {
           fontFamily: FONTS.semiBold,
-          fontSize: FONT_SIZE.xs,
+          fontSize: FONT_SIZE.sm,
         },
       }}
     >
@@ -38,6 +38,13 @@ export default function AppLayout() {
         options={{
           title: 'Profile',
           tabBarIcon: ({ focused }) => <TabIcon emoji="👤" focused={focused} />,
+        }}
+      />
+      {/* Hide the notifications screen from the tab bar */}
+      <Tabs.Screen
+        name="notifications/index"
+        options={{
+          href: null,
         }}
       />
     </Tabs>

@@ -1,6 +1,7 @@
 // ─── Backend Base URL ─────────────────────────────────────────────────────────
-// In production, replace with your deployed API URL
-export const API_BASE_URL = 'http://localhost:3000/api/v1';
+// The base URL should be configured in your .env file as EXPO_PUBLIC_API_URL.
+// Example: EXPO_PUBLIC_API_URL=http://192.168.0.111:3000/api/v1
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
 
 // ─── Auth Endpoints ───────────────────────────────────────────────────────────
 export const AUTH_URLS = {

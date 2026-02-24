@@ -1,4 +1,4 @@
-import { StyleSheet, View, Text, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { StyleSheet, View, Text, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useForm, Controller } from 'react-hook-form';
@@ -12,6 +12,7 @@ import { AuthInput } from '@components/ui/AuthInput';
 import { PrimaryButton } from '@components/ui/PrimaryButton';
 import { GlassCard } from '@components/ui/GlassCard';
 import { COLORS, FONTS, FONT_SIZE, SPACING } from '@constants/index';
+import { API_BASE_URL } from '@constants/api-urls.const';
 
 export default function LoginScreen() {
   const dispatch = useAppDispatch();
@@ -28,16 +29,23 @@ export default function LoginScreen() {
 
   const onSubmit = async (data: LoginFormData) => {
     try {
+      console.log(`[LOGIN] Attempting login to: ${API_BASE_URL}`);
+      // Alert.alert('Debug', `API URL: ${API_BASE_URL}`);
       const res = await login(data).unwrap();
-      await storage.setTokens(res.data.tokens.accessToken, res.data.tokens.refreshToken);
+      console.log('[LOGIN] Success:', res.data.user.email);
+      await Promise.all([
+        storage.setTokens(res.data.tokens.accessToken, res.data.tokens.refreshToken),
+        storage.setUser(res.data.user)
+      ]);
       dispatch(setCredentials({
         user: res.data.user,
         accessToken: res.data.tokens.accessToken,
         refreshToken: res.data.tokens.refreshToken,
       }));
       router.replace('/(app)/feed');
-    } catch (err) {
-      // Error handled by RTK Query / UI
+    } catch (err: any) {
+      console.error('[LOGIN] Error:', err);
+      // Alert.alert('Login Error', JSON.stringify(err, null, 2));
     }
   };
 

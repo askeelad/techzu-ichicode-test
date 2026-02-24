@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -16,22 +16,48 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import BottomSheet from '@gorhom/bottom-sheet';
 
 import { useGetFeedQuery, useCreatePostMutation, Post } from '@store/api/postApi';
+import { useGetNotificationsQuery } from '@store/api/notificationApi';
 import { useAppSelector, useAppDispatch, logout } from '@store/index';
 import { storage } from '@utils/storage';
 import { PostCard } from '../../../src/components/PostCard';
 import { CommentSheet } from '../../../src/components/CommentSheet';
 import { COLORS, FONTS, FONT_SIZE, SPACING, RADIUS, PAGINATION } from '@constants/index';
 import { rs, isTablet } from '@utils/responsive';
+import { useRouter } from 'expo-router';
 
 const LIMIT = PAGINATION.DEFAULT_LIMIT;
 
 export default function FeedScreen() {
+  const router = useRouter();
   const dispatch = useAppDispatch();
   const user = useAppSelector((s) => s.auth.user);
 
   // ── Feed pagination state ───────────────────────────────────────────────────
   const [page, setPage] = useState(1);
-  const { data, isFetching, isLoading } = useGetFeedQuery({ page, limit: LIMIT });
+  const [searchText, setSearchText] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  // ── Notifications check ─────────────────────────────────────────────────────
+  const { data: notifData } = useGetNotificationsQuery(
+    { page: 1, limit: 10 },
+    { pollingInterval: 10000 } // poll every 10s for new red dots
+  );
+  const hasUnread = notifData?.data?.some((n) => !n.is_read) ?? false;
+
+  // Debounce search input to avoid hitting the API on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchText);
+      setPage(1); // Reset to page 1 when search changes
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchText]);
+
+  const { data, isFetching, isLoading } = useGetFeedQuery({ 
+    page, 
+    limit: LIMIT,
+    username: debouncedSearch.trim() || undefined
+  });
 
   // ── Create post ─────────────────────────────────────────────────────────────
   const [showCreate, setShowCreate] = useState(false);
@@ -83,13 +109,35 @@ export default function FeedScreen() {
         <View style={styles.header}>
           <Text style={styles.headerTitle}>SocialFeed</Text>
           <View style={styles.headerRight}>
-            <Pressable style={styles.createBtn} onPress={() => setShowCreate(true)}>
-              <Text style={styles.createBtnText}>✏️</Text>
+            <Pressable onPress={() => router.push('/notifications')} style={styles.iconBtn}>
+              <Text style={styles.iconBtnText}>🔔</Text>
+              {hasUnread && <View style={styles.notificationDot} />}
             </Pressable>
-            <Pressable onPress={handleLogout}>
+            <Pressable style={styles.iconBtn} onPress={() => setShowCreate(true)}>
+              <Text style={styles.iconBtnText}>✏️</Text>
+            </Pressable>
+            <Pressable onPress={handleLogout} style={styles.logoutBtn}>
               <Text style={styles.logoutText}>Logout</Text>
             </Pressable>
           </View>
+        </View>
+
+        {/* ── Search Bar ────────────────────────────────────────────────────── */}
+        <View style={styles.searchContainer}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search by username..."
+            placeholderTextColor={COLORS.textMuted}
+            value={searchText}
+            onChangeText={setSearchText}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          {searchText.length > 0 && (
+            <Pressable onPress={() => setSearchText('')} style={styles.clearBtn}>
+              <Text style={styles.clearBtnText}>✕</Text>
+            </Pressable>
+          )}
         </View>
 
         {/* ── Feed FlatList ──────────────────────────────────────────────────── */}
@@ -224,7 +272,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: SPACING.md,
   },
-  createBtn: {
+  iconBtn: {
     width: rs(36),
     height: rs(36),
     borderRadius: rs(18),
@@ -234,11 +282,56 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  createBtnText: { fontSize: FONT_SIZE.md },
+  iconBtnText: { fontSize: FONT_SIZE.md },
+  notificationDot: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.error,
+    borderWidth: 1,
+    borderColor: COLORS.surface,
+  },
+  logoutBtn: {
+    marginLeft: SPACING.xs,
+  },
   logoutText: {
     color: COLORS.primaryLight,
     fontFamily: FONTS.semiBold,
     fontSize: FONT_SIZE.sm,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.base,
+    paddingBottom: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  searchInput: {
+    flex: 1,
+    height: 40,
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.md,
+    paddingHorizontal: SPACING.md,
+    color: COLORS.textPrimary,
+    fontFamily: FONTS.regular,
+    fontSize: FONT_SIZE.sm,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  clearBtn: {
+    position: 'absolute',
+    right: SPACING.base + SPACING.md,
+    height: 40,
+    justifyContent: 'center',
+    paddingHorizontal: SPACING.xs,
+  },
+  clearBtnText: {
+    color: COLORS.textMuted,
+    fontSize: FONT_SIZE.md,
   },
   listContent: {
     paddingTop: SPACING.md,

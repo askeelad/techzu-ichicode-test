@@ -11,12 +11,14 @@ import {
   Pressable,
 } from 'react-native';
 import BottomSheet, {
-  BottomSheetView,
+  BottomSheetBackdrop,
+  BottomSheetBackdropProps,
   BottomSheetFlatList,
   BottomSheetTextInput,
 } from '@gorhom/bottom-sheet';
 import { Comment, Post } from '@store/api/postApi';
 import { useGetCommentsQuery, useAddCommentMutation } from '@store/api/postApi';
+import { useAppSelector } from '@store/index';
 import { COLORS, FONTS, FONT_SIZE, SPACING, RADIUS, PAGINATION } from '@constants/index';
 import { rs } from '@utils/responsive';
 
@@ -51,8 +53,21 @@ const CommentItem: React.FC<{ item: Comment }> = ({ item }) => (
 );
 
 export const CommentSheet: React.FC<CommentSheetProps> = ({ post, sheetRef }) => {
+  const user = useAppSelector((s) => s.auth.user);
   const [text, setText] = useState('');
   const [page, setPage] = useState(1);
+
+  const renderBackdrop = useCallback(
+    (props: BottomSheetBackdropProps) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        pressBehavior="close"
+      />
+    ),
+    [],
+  );
 
   const { data, isFetching } = useGetCommentsQuery(
     { postId: post?.id ?? '', page, limit: PAGINATION.COMMENTS_LIMIT },
@@ -66,7 +81,7 @@ export const CommentSheet: React.FC<CommentSheetProps> = ({ post, sheetRef }) =>
     const content = text.trim();
     setText('');
     try {
-      await addComment({ postId: post.id, content }).unwrap();
+      await addComment({ postId: post.id, content, user }).unwrap();
     } catch {
       setText(content); // revert
     }
@@ -86,11 +101,8 @@ export const CommentSheet: React.FC<CommentSheetProps> = ({ post, sheetRef }) =>
       enablePanDownToClose
       backgroundStyle={styles.sheetBg}
       handleIndicatorStyle={styles.indicator}
+      backdropComponent={renderBackdrop}
     >
-      <BottomSheetView style={styles.header}>
-        <Text style={styles.title}>Comments {post ? `(${post.comments_count})` : ''}</Text>
-      </BottomSheetView>
-
       <BottomSheetFlatList
         data={data?.data ?? []}
         keyExtractor={(c: Comment) => c.id}
@@ -98,6 +110,11 @@ export const CommentSheet: React.FC<CommentSheetProps> = ({ post, sheetRef }) =>
         onEndReached={loadMore}
         onEndReachedThreshold={0.5}
         contentContainerStyle={styles.listContent}
+        ListHeaderComponent={
+          <View style={styles.header}>
+            <Text style={styles.title}>Comments {post ? `(${post.comments_count})` : ''}</Text>
+          </View>
+        }
         ListEmptyComponent={
           isFetching ? (
             <ActivityIndicator color={COLORS.primary} style={{ marginTop: SPACING.xl }} />
@@ -106,38 +123,34 @@ export const CommentSheet: React.FC<CommentSheetProps> = ({ post, sheetRef }) =>
           )
         }
         ListFooterComponent={
-          isFetching && page > 1 ? (
-            <ActivityIndicator color={COLORS.primary} style={{ margin: SPACING.md }} />
-          ) : null
+          <View style={{ marginTop: 24 }}>
+            {isFetching && page > 1 ? (
+              <ActivityIndicator color={COLORS.primary} style={{ margin: SPACING.md }} />
+            ) : null}
+            <View style={styles.inputRow}>
+              <BottomSheetTextInput
+                style={styles.input}
+                placeholder="Add a comment…"
+                placeholderTextColor={COLORS.placeholder}
+                value={text}
+                onChangeText={setText}
+                multiline
+              />
+              <Pressable
+                onPress={handleSend}
+                disabled={sending || !text.trim()}
+                style={[styles.sendBtn, (!text.trim() || sending) && styles.sendBtnDisabled]}
+              >
+                {sending ? (
+                  <ActivityIndicator color={COLORS.white} size="small" />
+                ) : (
+                  <Text style={styles.sendText}>↑</Text>
+                )}
+              </Pressable>
+            </View>
+          </View>
         }
       />
-
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={30}
-      >
-        <View style={styles.inputRow}>
-          <BottomSheetTextInput
-            style={styles.input}
-            placeholder="Add a comment…"
-            placeholderTextColor={COLORS.placeholder}
-            value={text}
-            onChangeText={setText}
-            multiline
-          />
-          <Pressable
-            onPress={handleSend}
-            disabled={sending || !text.trim()}
-            style={[styles.sendBtn, (!text.trim() || sending) && styles.sendBtnDisabled]}
-          >
-            {sending ? (
-              <ActivityIndicator color={COLORS.white} size="small" />
-            ) : (
-              <Text style={styles.sendText}>↑</Text>
-            )}
-          </Pressable>
-        </View>
-      </KeyboardAvoidingView>
     </BottomSheet>
   );
 };
@@ -150,6 +163,7 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.md,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.divider,
+    marginBottom: SPACING.md,
   },
   title: {
     color: COLORS.textPrimary,
@@ -157,10 +171,11 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE.md,
     textAlign: 'center',
   },
-  listContent: { paddingHorizontal: SPACING.base, paddingTop: SPACING.sm },
+  listContent: { paddingBottom: SPACING.xl },
   commentItem: {
+    paddingHorizontal: SPACING.base,
+    paddingVertical: SPACING.md,
     flexDirection: 'row',
-    marginBottom: SPACING.md,
     gap: SPACING.sm,
   },
   commentAvatar: {
@@ -207,8 +222,6 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     gap: SPACING.sm,
     padding: SPACING.md,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.divider,
     backgroundColor: COLORS.backgroundSecondary,
   },
   input: {
@@ -238,4 +251,4 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE.md,
     fontFamily: FONTS.semiBold,
   },
-});
+})

@@ -14,6 +14,7 @@ import { HTTP_STATUS, ERROR_MESSAGES } from './constants';
 import { logger } from './utils/logger.util';
 import authRoutes from './modules/auth/auth.routes';
 import postRoutes from './modules/posts/post.routes';
+import notificationRoutes from './modules/notifications/notification.routes';
 
 const createApp = (): Application => {
   const app = express();
@@ -22,7 +23,7 @@ const createApp = (): Application => {
   app.use(helmet());
   app.use(
     cors({
-      origin: (process.env.ALLOWED_ORIGINS ?? 'http://localhost:3000').split(','),
+      origin: '*',
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization'],
       credentials: true,
@@ -76,6 +77,7 @@ const createApp = (): Application => {
   // ── API Routes (modules mounted here as they are built) ────────────────────
   app.use('/api/v1/auth', authRoutes);
   app.use('/api/v1/posts', postRoutes);
+  app.use('/api/v1/notifications', notificationRoutes);
 
   // ── 404 handler ────────────────────────────────────────────────────────────
   app.use((_req: Request, res: Response) => {

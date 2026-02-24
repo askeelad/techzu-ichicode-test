@@ -129,13 +129,41 @@ export const postApi = createApi({
     }),
 
     // Add comment
-    addComment: builder.mutation<{ success: boolean; data: Comment }, { postId: string; content: string }>({
+    addComment: builder.mutation<{ success: boolean; data: Comment }, { postId: string; content: string; user: any }>({
       query: ({ postId, content }) => ({
         url: POST_URLS.COMMENT(postId),
         method: 'POST',
         body: { content },
       }),
-      invalidatesTags: (_result, _error, { postId }) => [{ type: 'Comments', id: postId }],
+      invalidatesTags: (_result, _error, { postId }) => [
+        { type: 'Comments', id: postId },
+        'Post', // also refresh feed to update comment counts
+      ],
+      async onQueryStarted({ postId, content, user }, { dispatch, queryFulfilled }) {
+        const tempId = Date.now().toString();
+        const optimisticComment: Comment = {
+          id: tempId,
+          content,
+          author: {
+            id: user.id ?? 'me',
+            username: user.username ?? 'Current User',
+            email: user.email ?? '',
+          },
+          created_at: new Date().toISOString(),
+        };
+
+        const patchResult = dispatch(
+          postApi.util.updateQueryData('getComments', { postId, page: 1, limit: 10 }, (draft) => {
+            // Optimistically insert at the beginning
+            draft.data.unshift(optimisticComment);
+          })
+        );
+        try {
+          await queryFulfilled;
+        } catch {
+          patchResult.undo();
+        }
+      },
     }),
 
     // Get comments

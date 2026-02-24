@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "673128535754",
+    "project_id": "techzu",
+    "storage_bucket": "techzu.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:673128535754:android:9b325b6f7c655e45344633",
+        "android_client_info": {
+          "package_name": "com.anonymous.socialfeed"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBZaKGckUCAON_IauiEeeX2RR5W7k6vb6Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "SocialFeed",
-    "slug": "social-feed",
+    "slug": "socialfeed",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -14,13 +14,16 @@
       "backgroundColor": "#0A0A0F"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.anonymous.socialfeed"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0A0A0F"
-      }
+      },
+      "package": "com.anonymous.socialfeed",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -29,15 +32,24 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#ffffff"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
+      "router": {},
       "eas": {
-        "projectId": "1c28bbee-1144-41d3-a55e-18be0295da9d"
+        "projectId": "5ec972cf-102e-4637-b59e-88fa8fb5c094"
       }
-    }
+    },
+    "owner": "k_bashar"
   }
 }

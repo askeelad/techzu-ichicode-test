@@ -34,7 +34,10 @@ export default function SignupScreen() {
         password: data.password,
       }).unwrap();
 
-      await storage.setTokens(res.data.tokens.accessToken, res.data.tokens.refreshToken);
+      await Promise.all([
+        storage.setTokens(res.data.tokens.accessToken, res.data.tokens.refreshToken),
+        storage.setUser(res.data.user)
+      ]);
       dispatch(setCredentials({
         user: res.data.user,
         accessToken: res.data.tokens.accessToken,

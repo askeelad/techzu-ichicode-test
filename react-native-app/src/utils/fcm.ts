@@ -40,9 +40,17 @@ export async function registerForPushNotificationsAsync() {
     }
 
     // Expo SDK 50+ approach for projectId
+    // In bare workflow, Expo cannot always infer this from app.json
     const projectId =
       Constants?.expoConfig?.extra?.eas?.projectId ??
-      Constants?.easConfig?.projectId;
+      Constants?.easConfig?.projectId ??
+      process.env.EXPO_PUBLIC_PROJECT_ID;
+
+    if (!projectId) {
+      console.log('⚠️ Failed to get push token: No Expo Project ID found.');
+      console.log('Please add EXPO_PUBLIC_PROJECT_ID=your-project-id to your .env file.');
+      return;
+    }
 
     try {
       token = (
