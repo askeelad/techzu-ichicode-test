@@ -5,10 +5,10 @@ import {
   FetchBaseQueryError,
 } from '@reduxjs/toolkit/query';
 import { Mutex } from 'async-mutex';
-import { RootState } from './store';
-import { tokenRefreshed, logout } from './authSlice';
-import { storage } from '../utils/storage';
-import { API_BASE_URL, AUTH_URLS } from '../constants';
+import { RootState } from '../store';
+import { tokenRefreshed, logout } from '../authSlice';
+import { storage } from '../../utils/storage';
+import { API_BASE_URL, AUTH_URLS } from '../../constants';
 
 // Mutex prevents concurrent refresh calls (only one refresh at a time)
 const refreshMutex = new Mutex();
