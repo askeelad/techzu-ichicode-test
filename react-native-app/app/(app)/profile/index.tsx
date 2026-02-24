@@ -4,9 +4,9 @@ import {
   Text,
   StyleSheet,
   Pressable,
-  SafeAreaView,
   ScrollView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppDispatch, useAppSelector, logout } from '@store/index';
 import { storage } from '@utils/storage';
 import { COLORS, FONTS, FONT_SIZE, SPACING, RADIUS } from '@constants/index';
