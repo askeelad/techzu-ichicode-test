@@ -16,15 +16,21 @@ export const initializeFirebase = (): void => {
     return;
   }
 
-  initializeApp({
-    credential: cert({
-      projectId: FIREBASE_PROJECT_ID,
-      privateKey: FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-      clientEmail: FIREBASE_CLIENT_EMAIL,
-    }),
-  });
-
-  logger.info('Firebase Admin SDK initialised.');
+  try {
+    initializeApp({
+      credential: cert({
+        projectId: FIREBASE_PROJECT_ID,
+        privateKey: FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n').replace(/^["']|["']$/g, ''),
+        clientEmail: FIREBASE_CLIENT_EMAIL,
+      }),
+    });
+    logger.info('Firebase Admin SDK initialised.');
+  } catch (error) {
+    logger.warn(
+      'Failed to initialise Firebase Admin SDK. Push notifications will be disabled:',
+      (error as Error).message,
+    );
+  }
 };
 
 export interface FcmPayload {
