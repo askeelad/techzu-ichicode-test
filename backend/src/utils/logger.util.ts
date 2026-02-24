@@ -17,10 +17,6 @@ export const logger = createLogger({
     timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
     isDevelopment ? combine(colorize(), devFormat) : json(),
   ),
-  transports: [
-    new transports.Console(),
-    // Add file transport in production if needed
-    // new transports.File({ filename: 'logs/error.log', level: 'error' }),
-  ],
+  transports: [new transports.Console()],
   exitOnError: false,
 });
