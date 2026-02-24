@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,14 +6,8 @@ import {
   TouchableOpacity,
   Pressable,
   Share,
-  Alert,
+  Animated,
 } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSequence,
-  withSpring,
-} from 'react-native-reanimated';
 import { COLORS, FONTS, FONT_SIZE, SPACING, RADIUS, SHADOW } from '@constants/index';
 import { rs } from '@utils/responsive';
 import { Post } from '@store/api/postApi';
@@ -44,19 +38,21 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onCommentPress }) => {
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(post.likes_count);
 
-  const heartScale = useSharedValue(1);
-  const heartStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: heartScale.value }],
-  }));
+  // Built-in Animated (no worklets / reanimated needed)
+  const heartScale = useRef(new Animated.Value(1)).current;
+
+  const bounceHeart = () => {
+    Animated.sequence([
+      Animated.spring(heartScale, { toValue: 1.5, useNativeDriver: true }),
+      Animated.spring(heartScale, { toValue: 1, useNativeDriver: true }),
+    ]).start();
+  };
 
   const handleLike = async () => {
-    // Optimistic update
     const wasLiked = liked;
     setLiked(!wasLiked);
     setLikeCount((c) => (wasLiked ? c - 1 : c + 1));
-
-    // Heart bounce animation
-    heartScale.value = withSequence(withSpring(1.5), withSpring(1));
+    bounceHeart();
 
     try {
       await toggleLike(post.id).unwrap();
@@ -71,14 +67,11 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onCommentPress }) => {
     await Share.share({ message: post.content });
   };
 
-  const avatarUrl = `${AVATAR_PLACEHOLDER}${encodeURIComponent(post.author.username)}`;
-
   return (
     <View style={styles.card}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.avatarWrapper}>
-          {/* eslint-disable-next-line @typescript-eslint/no-require-imports */}
           <Text style={styles.avatarText}>
             {post.author.username[0]?.toUpperCase() ?? '?'}
           </Text>
@@ -104,7 +97,9 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onCommentPress }) => {
       <View style={styles.actions}>
         {/* Like */}
         <Pressable style={styles.actionBtn} onPress={handleLike}>
-          <Animated.Text style={[styles.actionIcon, heartStyle]}>
+          <Animated.Text
+            style={[styles.actionIcon, { transform: [{ scale: heartScale }] }]}
+          >
             {liked ? '❤️' : '🤍'}
           </Animated.Text>
           <Text style={[styles.actionLabel, liked && styles.actionLabelActive]}>
