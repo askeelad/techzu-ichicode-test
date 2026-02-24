@@ -1,0 +1,7 @@
+{
+  "eslint.workingDirectories": ["backend", "react-native-app"],
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  }
+}
