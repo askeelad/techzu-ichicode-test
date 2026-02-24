@@ -8,6 +8,7 @@ import {
   Inter_400Regular,
   Inter_600SemiBold,
 } from '@expo-google-fonts/inter';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { store, useAppDispatch, useAppSelector, setCredentials, RootState } from '@store/index';
 import { storage } from '@utils/storage';
 import { COLORS } from '@constants/index';
@@ -88,12 +89,14 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
-    <Provider store={store}>
-      <View style={styles.container}>
-        <StatusBar style="light" />
-        <AuthGuard />
-      </View>
-    </Provider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <Provider store={store}>
+        <View style={styles.container}>
+          <StatusBar style="light" />
+          <AuthGuard />
+        </View>
+      </Provider>
+    </GestureHandlerRootView>
   );
 }
 
