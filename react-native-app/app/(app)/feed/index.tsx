@@ -14,7 +14,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BottomSheet from '@gorhom/bottom-sheet';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { useGetFeedQuery, useCreatePostMutation, Post } from '@store/api/postApi';
 import { useAppSelector, useAppDispatch, logout } from '@store/index';
@@ -79,8 +78,7 @@ export default function FeedScreen() {
   const posts = data?.data ?? [];
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container}>
         {/* ── Header ────────────────────────────────────────────────────────── */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>SocialFeed</Text>
@@ -199,7 +197,6 @@ export default function FeedScreen() {
         {/* ── Comment Sheet ─────────────────────────────────────────────────── */}
         <CommentSheet post={selectedPost} sheetRef={commentSheetRef} />
       </SafeAreaView>
-    </GestureHandlerRootView>
   );
 }
 
