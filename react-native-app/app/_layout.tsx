@@ -11,6 +11,8 @@ import {
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { store, useAppDispatch, useAppSelector, setCredentials, RootState } from '@store/index';
 import { storage } from '@utils/storage';
+import { registerForPushNotificationsAsync } from '@utils/fcm';
+import { useUpdateFcmTokenMutation } from '@store/api/authApi';
 import { COLORS } from '@constants/index';
 
 // ─── Inner App containing Auth Guard ──────────────────────────────────────────
@@ -47,6 +49,20 @@ function AuthGuard() {
     }
     void hydrateAuth();
   }, [dispatch]);
+
+  // Request FCM token and register with API if authenticated
+  const [updateFcm] = useUpdateFcmTokenMutation();
+  useEffect(() => {
+    if (isAuthenticated) {
+      registerForPushNotificationsAsync().then((token) => {
+        if (token) {
+          updateFcm({ fcmToken: token }).catch(() => {
+            // Silently ignore if it fails to update
+          });
+        }
+      });
+    }
+  }, [isAuthenticated, updateFcm]);
 
   // Auth routing logic
   useEffect(() => {
