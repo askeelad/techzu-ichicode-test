@@ -11,9 +11,9 @@ export const validate =
   (req: Request, res: Response, next: NextFunction): void => {
     try {
       schema.parse({
-        body: req.body,
-        query: req.query,
-        params: req.params,
+        body: req.body as unknown,
+        query: req.query as unknown,
+        params: req.params as unknown,
       });
       next();
     } catch (error) {

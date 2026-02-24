@@ -12,6 +12,7 @@ import { globalRateLimiter } from './middlewares/rate-limit.middleware';
 import { sendSuccess, sendError } from './utils/response.util';
 import { HTTP_STATUS, ERROR_MESSAGES } from './constants';
 import { logger } from './utils/logger.util';
+import authRoutes from './modules/auth/auth.routes';
 
 const createApp = (): Application => {
   const app = express();
@@ -72,7 +73,7 @@ const createApp = (): Application => {
   });
 
   // ── API Routes (modules mounted here as they are built) ────────────────────
-  // app.use('/api/v1/auth', authRoutes);
+  app.use('/api/v1/auth', authRoutes);
   // app.use('/api/v1/posts', postRoutes);
 
   // ── 404 handler ────────────────────────────────────────────────────────────
