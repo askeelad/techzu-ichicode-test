@@ -1,12 +1,8 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  TextInput,
-  FlatList,
-  KeyboardAvoidingView,
-  Platform,
   ActivityIndicator,
   Pressable,
 } from 'react-native';
