@@ -49,7 +49,7 @@ export default function FeedScreen() {
   // ── Notifications check ─────────────────────────────────────────────────────
   const { data: notifData } = useGetNotificationsQuery(
     { page: 1, limit: 10 },
-    { pollingInterval: 10000 } // poll every 10s for new red dots
+    { pollingInterval: 10000 }
   );
   const hasUnread = notifData?.data?.some((n) => !n.is_read) ?? false;
 
