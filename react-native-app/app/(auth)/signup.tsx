@@ -44,12 +44,13 @@ export default function SignupScreen() {
         refreshToken: res.data.tokens.refreshToken,
       }));
       router.replace('/(app)/feed');
-    } catch (err) {
-      // Handled by RTK Query / UI
+    } catch (err: any) {
+      console.error('[SIGNUP] Error:', err);
     }
   };
 
-  const errorMessage = (error as any)?.data?.message;
+  const errObj = error as any;
+  const errorMessage = errObj?.data?.message || errObj?.error || errObj?.message;
 
   return (
     <View style={styles.container}>

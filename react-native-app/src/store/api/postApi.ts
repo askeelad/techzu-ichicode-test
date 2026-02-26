@@ -120,12 +120,12 @@ export const postApi = createApi({
       invalidatesTags: ['Post'],
     }),
 
-    // Toggle like
     toggleLike: builder.mutation<LikeResponse, string>({
       query: (id) => ({
         url: POST_URLS.LIKE(id),
         method: 'POST',
       }),
+      invalidatesTags: ['Post'], // Added so the feed updates the heart icon
     }),
 
     // Add comment

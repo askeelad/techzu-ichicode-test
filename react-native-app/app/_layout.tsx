@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { Slot, Stack, router, useSegments } from 'expo-router';
+import * as Notifications from 'expo-notifications';
 import { Provider } from 'react-redux';
 import {
   useFonts,
@@ -13,6 +14,7 @@ import { store, useAppDispatch, useAppSelector, setCredentials, RootState } from
 import { storage } from '@utils/storage';
 import { registerForPushNotificationsAsync } from '@utils/fcm';
 import { useUpdateFcmTokenMutation } from '@store/api/authApi';
+import { notificationApi } from '@store/api/notificationApi';
 import { COLORS } from '@constants/index';
 
 // ─── Inner App containing Auth Guard ──────────────────────────────────────────
@@ -61,6 +63,17 @@ function AuthGuard() {
           });
         }
       });
+
+      // Listen for foreground push notifications to instantly refetch the notifications list
+      const subscription = Notifications.addNotificationReceivedListener((notification) => {
+        // Invalidate the 'Notifications' tag in RTK Query to force an instant refetch
+        // This makes the red dot and notification list update "live" without polling delay
+        dispatch(notificationApi.util.invalidateTags(['Notifications']));
+      });
+
+      return () => {
+        subscription.remove();
+      };
     }
   }, [isAuthenticated, updateFcm]);
 

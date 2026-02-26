@@ -1,4 +1,4 @@
-import { StyleSheet, View, Text, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
+import { StyleSheet, View, Text, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useForm, Controller } from 'react-hook-form';
@@ -45,11 +45,11 @@ export default function LoginScreen() {
       router.replace('/(app)/feed');
     } catch (err: any) {
       console.error('[LOGIN] Error:', err);
-      // Alert.alert('Login Error', JSON.stringify(err, null, 2));
     }
   };
 
-  const errorMessage = (error as any)?.data?.message;
+  const errObj = error as any;
+  const errorMessage = errObj?.data?.message || errObj?.error || errObj?.message;
 
   return (
     <View style={styles.container}>
