@@ -7,13 +7,16 @@ import {
   Pressable,
   Share,
   Animated,
+  ActionSheetIOS,
+  Alert,
+  Platform,
 } from 'react-native';
+import { Send, MoreHorizontal, Heart, MessageCircle } from 'lucide-react-native';
 import { COLORS, FONTS, FONT_SIZE, SPACING, RADIUS, SHADOW } from '@constants/index';
 import { rs } from '@utils/responsive';
 import { Post } from '@store/api/postApi';
-import { useToggleLikeMutation } from '@store/api/postApi';
+import { useToggleLikeMutation, useDeletePostMutation } from '@store/api/postApi';
 import { useAppSelector } from '@store/index';
-import { AVATAR_PLACEHOLDER } from '@constants/app.const';
 
 interface PostCardProps {
   post: Post;
@@ -32,6 +35,7 @@ function timeAgo(dateStr: string): string {
 
 export const PostCard: React.FC<PostCardProps> = ({ post, onCommentPress }) => {
   const [toggleLike] = useToggleLikeMutation();
+  const [deletePost] = useDeletePostMutation();
   const currentUser = useAppSelector((s) => s.auth.user);
 
   // Local optimistic like state
@@ -67,6 +71,45 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onCommentPress }) => {
     await Share.share({ message: post.content });
   };
 
+  const handleDelete = () => {
+    Alert.alert('Delete Post', 'Are you sure you want to delete this post?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deletePost(post.id).unwrap();
+          } catch (error) {
+            console.error('Failed to delete post', error);
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleOptions = () => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Cancel', 'Delete Post'],
+          destructiveButtonIndex: 1,
+          cancelButtonIndex: 0,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) {
+            handleDelete();
+          }
+        }
+      );
+    } else {
+      Alert.alert('Post Options', 'Choose an action', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete Post', style: 'destructive', onPress: handleDelete },
+      ]);
+    }
+  };
+
   return (
     <View style={styles.card}>
       {/* Header */}
@@ -81,8 +124,8 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onCommentPress }) => {
           <Text style={styles.timestamp}>{timeAgo(post.created_at)}</Text>
         </View>
         {currentUser?.id === post.author.id && (
-          <TouchableOpacity style={styles.moreBtn}>
-            <Text style={styles.moreBtnText}>•••</Text>
+          <TouchableOpacity style={styles.moreBtn} onPress={handleOptions}>
+            <MoreHorizontal size={20} color={COLORS.textMuted} />
           </TouchableOpacity>
         )}
       </View>
@@ -97,11 +140,13 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onCommentPress }) => {
       <View style={styles.actions}>
         {/* Like */}
         <Pressable style={styles.actionBtn} onPress={handleLike}>
-          <Animated.Text
-            style={[styles.actionIcon, { transform: [{ scale: heartScale }] }]}
-          >
-            {liked ? '❤️' : '🤍'}
-          </Animated.Text>
+          <Animated.View style={{ transform: [{ scale: heartScale }] }}>
+            <Heart
+              size={20}
+              color={liked ? COLORS.like : COLORS.textSecondary}
+              fill={liked ? COLORS.like : 'transparent'}
+            />
+          </Animated.View>
           <Text style={[styles.actionLabel, liked && styles.actionLabelActive]}>
             {likeCount}
           </Text>
@@ -109,13 +154,13 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onCommentPress }) => {
 
         {/* Comment */}
         <Pressable style={styles.actionBtn} onPress={() => onCommentPress(post)}>
-          <Text style={styles.actionIcon}>💬</Text>
+          <MessageCircle size={20} color={COLORS.textSecondary} />
           <Text style={styles.actionLabel}>{post.comments_count}</Text>
         </Pressable>
 
         {/* Share */}
         <Pressable style={styles.actionBtn} onPress={handleShare}>
-          <Text style={styles.actionIcon}>↗️</Text>
+          <Send size={20} color={COLORS.textSecondary} />
         </Pressable>
       </View>
     </View>
@@ -171,11 +216,6 @@ const styles = StyleSheet.create({
   moreBtn: {
     padding: SPACING.xs,
   },
-  moreBtnText: {
-    color: COLORS.textMuted,
-    fontSize: FONT_SIZE.md,
-    letterSpacing: 2,
-  },
   content: {
     color: COLORS.textPrimary,
     fontFamily: FONTS.regular,
@@ -198,13 +238,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: SPACING.xs,
   },
-  actionIcon: {
-    fontSize: FONT_SIZE.md,
-  },
   actionLabel: {
     color: COLORS.textSecondary,
     fontFamily: FONTS.regular,
     fontSize: FONT_SIZE.sm,
+  },
+  shareIcon: {
+    transform: [{ translateY: -1 }], // minor adjustment to center with line-height of text
   },
   actionLabelActive: {
     color: COLORS.like,
