@@ -11,19 +11,28 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BottomSheet from '@gorhom/bottom-sheet';
 
-import { useGetFeedQuery, useSearchPostsQuery, useCreatePostMutation, Post } from '@store/api/postApi';
+import { 
+  useGetFeedQuery, 
+  useSearchPostsQuery, 
+  useCreatePostMutation, 
+  useUpdatePostMutation,
+  Post 
+} from '@store/api/postApi';
 import { useGetNotificationsQuery } from '@store/api/notificationApi';
 import { useAppSelector, useAppDispatch, logout } from '@store/index';
 import { storage } from '@utils/storage';
-import { PostCard } from '../../../src/components/PostCard';
-import { CommentSheet } from '../../../src/components/CommentSheet';
+import { PostCard } from '@components/PostCard';
+import { CommentSheet } from '@components/CommentSheet';
+import { PostOptionsSheet } from '@components/PostOptionsSheet';
 import { COLORS, FONTS, FONT_SIZE, SPACING, RADIUS, PAGINATION } from '@constants/index';
 import { rs, isTablet } from '@utils/responsive';
 import { useRouter } from 'expo-router';
+import { Plus } from 'lucide-react-native'
 
 const LIMIT = PAGINATION.DEFAULT_LIMIT;
 
@@ -71,14 +80,59 @@ export default function FeedScreen() {
   const activeQuery = isSearching ? searchQuery : feedQuery;
   const { data, isFetching, isLoading } = activeQuery;
 
-  // ── Create post ─────────────────────────────────────────────────────────────
+  // ── Create or Edit post ─────────────────────────────────────────────────────
   const [showCreate, setShowCreate] = useState(false);
-  const [postContent, setPostContent] = useState('');
-  const [createPost, { isLoading: creating }] = useCreatePostMutation();
+  const [createContent, setCreateContent] = useState('');
+  const [editPostId, setEditPostId] = useState<string | null>(null);
 
-  // ── Comment bottom sheet ────────────────────────────────────────────────────
-  const commentSheetRef = useRef<BottomSheet>(null);
+  const [createPost, { isLoading: isCreating }] = useCreatePostMutation();
+  const [updatePost, { isLoading: isUpdating }] = useUpdatePostMutation();
+
+  const handleOpenCreatePost = () => {
+    setEditPostId(null);
+    setCreateContent('');
+    setShowCreate(true);
+  };
+
+  const handlePostSubmit = async () => {
+    if (!createContent.trim()) return;
+    try {
+      if (editPostId) {
+        await updatePost({ id: editPostId, content: createContent.trim() }).unwrap();
+      } else {
+        await createPost({ content: createContent.trim() }).unwrap();
+      }
+      setShowCreate(false);
+      setCreateContent('');
+      setEditPostId(null);
+    } catch (error) {
+      console.error('Failed to save post', error);
+    }
+  };
+
+  // ── Comments interaction ────────────────────────────────────────────────────
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const bottomSheetRef = useRef<BottomSheet>(null);
+
+  const handleCommentPress = useCallback((post: Post) => {
+    setSelectedPost(post);
+    bottomSheetRef.current?.expand();
+  }, []);
+
+  // ── Options interaction (Instagram style) ──────────────────────────────────
+  const [selectedOptionsPost, setSelectedOptionsPost] = useState<Post | null>(null);
+  const optionsSheetRef = useRef<BottomSheet>(null);
+
+  const handleOptionsPress = useCallback((post: Post) => {
+    setSelectedOptionsPost(post);
+    optionsSheetRef.current?.expand(); // expand the new options sheet
+  }, []);
+
+  const handleEditIntent = useCallback((post: Post) => {
+    setEditPostId(post.id);
+    setCreateContent(post.content);
+    setShowCreate(true);
+  }, []);
 
   // ── Handlers ────────────────────────────────────────────────────────────────
   const handleRefresh = useCallback(() => {
@@ -90,23 +144,6 @@ export default function FeedScreen() {
       setPage((p) => p + 1);
     }
   }, [data, page, isFetching]);
-
-  const handleCommentPress = useCallback((post: Post) => {
-    setSelectedPost(post);
-    commentSheetRef.current?.snapToIndex(0);
-  }, []);
-
-  const handleCreatePost = async () => {
-    if (!postContent.trim()) return;
-    try {
-      await createPost({ content: postContent.trim() }).unwrap();
-      setPostContent('');
-      setShowCreate(false);
-      setPage(1); // refresh feed
-    } catch {
-      // Error handled by RTK Query
-    }
-  };
 
   const handleLogout = async () => {
     await storage.clearTokens();
@@ -125,7 +162,7 @@ export default function FeedScreen() {
               <Text style={styles.iconBtnText}>🔔</Text>
               {hasUnread && <View style={styles.notificationDot} />}
             </Pressable>
-            <Pressable style={styles.iconBtn} onPress={() => setShowCreate(true)}>
+            <Pressable style={styles.iconBtn} onPress={handleOpenCreatePost}>
               <Text style={styles.iconBtnText}>✏️</Text>
             </Pressable>
             <Pressable onPress={handleLogout} style={styles.logoutBtn}>
@@ -162,7 +199,11 @@ export default function FeedScreen() {
             data={posts}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
-              <PostCard post={item} onCommentPress={handleCommentPress} />
+              <PostCard 
+                post={item} 
+                onCommentPress={handleCommentPress} 
+                onOptionsPress={handleOptionsPress}
+              />
             )}
             numColumns={isTablet() ? 2 : 1}
             key={isTablet() ? 'tablet' : 'phone'}
@@ -195,67 +236,83 @@ export default function FeedScreen() {
           />
         )}
 
-        {/* ── Create Post Modal ─────────────────────────────────────────────── */}
-        <Modal
-          visible={showCreate}
-          animationType="slide"
-          transparent
-          onRequestClose={() => setShowCreate(false)}
+        {/* Floating Action Button for Create Post */}
+        <TouchableOpacity 
+          style={styles.fab} 
+          onPress={handleOpenCreatePost}
+          activeOpacity={0.8}
         >
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.modalOverlay}
-          >
-            <View style={styles.createModal}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>New Post</Text>
-                <Pressable onPress={() => setShowCreate(false)}>
-                  <Text style={styles.modalClose}>✕</Text>
-                </Pressable>
-              </View>
+          <Plus size={24} color={COLORS.white} />
+        </TouchableOpacity>
 
-              <View style={styles.modalAuthor}>
-                <View style={styles.miniAvatar}>
-                  <Text style={styles.miniAvatarText}>
-                    {user?.username[0]?.toUpperCase() ?? '?'}
-                  </Text>
-                </View>
-                <Text style={styles.modalUsername}>@{user?.username ?? 'you'}</Text>
-              </View>
-
-              <TextInput
-                style={styles.postInput}
-                placeholder="What's on your mind?"
-                placeholderTextColor={COLORS.placeholder}
-                multiline
-                autoFocus
-                value={postContent}
-                onChangeText={setPostContent}
-                maxLength={500}
-              />
-
-              <Text style={styles.charCount}>{postContent.length}/500</Text>
-
-              <Pressable
-                style={[
-                  styles.postBtn,
-                  (!postContent.trim() || creating) && styles.postBtnDisabled,
-                ]}
-                onPress={handleCreatePost}
-                disabled={!postContent.trim() || creating}
-              >
-                {creating ? (
-                  <ActivityIndicator color={COLORS.white} />
-                ) : (
-                  <Text style={styles.postBtnText}>Post</Text>
-                )}
-              </Pressable>
+        {/* Create / Edit Modal */}
+        <Modal visible={showCreate} animationType="slide" presentationStyle="pageSheet">
+          <SafeAreaView style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setShowCreate(false)}>
+                <Text style={styles.modalCancel}>Cancel</Text>
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>{editPostId ? 'Edit Post' : 'New Post'}</Text>
+              <TouchableOpacity onPress={handlePostSubmit} disabled={isCreating || isUpdating}>
+                <Text style={styles.modalPost}>
+                  {isCreating || isUpdating ? 'Saving...' : editPostId ? 'Save' : 'Post'}
+                </Text>
+              </TouchableOpacity>
             </View>
-          </KeyboardAvoidingView>
+
+            <View style={styles.modalAuthor}>
+              <View style={styles.miniAvatar}>
+                <Text style={styles.miniAvatarText}>
+                  {user?.username[0]?.toUpperCase() ?? '?'}
+                </Text>
+              </View>
+              <Text style={styles.modalUsername}>@{user?.username ?? 'you'}</Text>
+            </View>
+
+            <TextInput
+              style={styles.postInput}
+              placeholder="What's on your mind?"
+              placeholderTextColor={COLORS.placeholder}
+              multiline
+              autoFocus
+              value={createContent}
+              onChangeText={setCreateContent}
+              maxLength={500}
+            />
+
+            <Text style={styles.charCount}>{createContent.length}/500</Text>
+
+            <Pressable
+              style={[
+                styles.postBtn,
+                (!createContent.trim() || isCreating || isUpdating) && styles.postBtnDisabled,
+              ]}
+              onPress={handlePostSubmit}
+              disabled={!createContent.trim() || isCreating || isUpdating}
+            >
+              {(isCreating || isUpdating) ? (
+                <ActivityIndicator color={COLORS.white} />
+              ) : (
+                <Text style={styles.postBtnText}>{editPostId ? 'Save' : 'Post'}</Text>
+              )}
+            </Pressable>
+          </SafeAreaView>
         </Modal>
 
-        {/* ── Comment Sheet ─────────────────────────────────────────────────── */}
-        <CommentSheet post={selectedPost} sheetRef={commentSheetRef} />
+        {/* Comment Bottom Sheet */}
+        <CommentSheet
+          ref={bottomSheetRef}
+          post={selectedPost}
+          onClose={() => bottomSheetRef.current?.close()}
+        />
+
+        {/* Options Bottom Sheet */}
+        <PostOptionsSheet
+          ref={optionsSheetRef}
+          post={selectedOptionsPost}
+          onEdit={handleEditIntent}
+          onClose={() => optionsSheetRef.current?.close()}
+        />
       </SafeAreaView>
   );
 }
@@ -367,34 +424,50 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.regular,
     fontSize: FONT_SIZE.sm,
   },
-  // Modal
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: COLORS.overlay,
-    justifyContent: 'flex-end',
+  fab: {
+    position: 'absolute',
+    bottom: SPACING.xl,
+    right: SPACING.xl,
+    width: rs(56),
+    height: rs(56),
+    borderRadius: rs(28),
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: COLORS.black,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 6,
   },
-  createModal: {
+  // Modal
+  modalContainer: {
+    flex: 1,
     backgroundColor: COLORS.backgroundSecondary,
-    borderTopLeftRadius: RADIUS.xl,
-    borderTopRightRadius: RADIUS.xl,
-    padding: SPACING.xl,
-    minHeight: 320,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SPACING.lg,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
   },
   modalTitle: {
     color: COLORS.textPrimary,
     fontFamily: FONTS.semiBold,
     fontSize: FONT_SIZE.lg,
   },
-  modalClose: {
+  modalCancel: {
     color: COLORS.textMuted,
-    fontSize: FONT_SIZE.lg,
-    padding: SPACING.xs,
+    fontFamily: FONTS.regular,
+    fontSize: FONT_SIZE.md,
+  },
+  modalPost: {
+    color: COLORS.primary,
+    fontFamily: FONTS.semiBold,
+    fontSize: FONT_SIZE.md,
   },
   modalAuthor: {
     flexDirection: 'row',
@@ -424,7 +497,9 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
     fontFamily: FONTS.regular,
     fontSize: FONT_SIZE.base,
-    minHeight: 120,
+    flex: 1,
+    paddingHorizontal: SPACING.xl,
+    paddingTop: SPACING.md,
     textAlignVertical: 'top',
     marginBottom: SPACING.xs,
   },
@@ -432,6 +507,7 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
     fontFamily: FONTS.regular,
     fontSize: FONT_SIZE.xs,
+    paddingHorizontal: SPACING.xl,
     textAlign: 'right',
     marginBottom: SPACING.md,
   },
@@ -439,6 +515,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     borderRadius: RADIUS.lg,
     height: 50,
+    marginHorizontal: SPACING.xl,
     justifyContent: 'center',
     alignItems: 'center',
   },

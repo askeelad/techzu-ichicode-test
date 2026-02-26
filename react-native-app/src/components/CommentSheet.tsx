@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, forwardRef } from 'react';
 import {
   View,
   Text,
@@ -20,7 +20,7 @@ import { rs } from '@utils/responsive';
 
 interface CommentSheetProps {
   post: Post | null;
-  sheetRef: React.RefObject<BottomSheet | null>;
+  onClose?: () => void;
 }
 
 function timeAgo(dateStr: string): string {
@@ -48,8 +48,9 @@ const CommentItem: React.FC<{ item: Comment }> = ({ item }) => (
   </View>
 );
 
-export const CommentSheet: React.FC<CommentSheetProps> = ({ post, sheetRef }) => {
-  const user = useAppSelector((s) => s.auth.user);
+export const CommentSheet = forwardRef<BottomSheet, CommentSheetProps>(
+  ({ post, onClose }, ref) => {
+    const user = useAppSelector((s) => s.auth.user);
   const [text, setText] = useState('');
   const [page, setPage] = useState(1);
 
@@ -91,7 +92,7 @@ export const CommentSheet: React.FC<CommentSheetProps> = ({ post, sheetRef }) =>
 
   return (
     <BottomSheet
-      ref={sheetRef}
+      ref={ref}
       index={-1}
       snapPoints={['55%', '90%']}
       enablePanDownToClose
@@ -149,7 +150,9 @@ export const CommentSheet: React.FC<CommentSheetProps> = ({ post, sheetRef }) =>
       />
     </BottomSheet>
   );
-};
+});
+
+CommentSheet.displayName = 'CommentSheet';
 
 const styles = StyleSheet.create({
   sheetBg: { backgroundColor: COLORS.backgroundSecondary, borderRadius: RADIUS.xl },

@@ -138,6 +138,16 @@ export const postApi = createApi({
       invalidatesTags: ['Post'],
     }),
 
+    // Update post
+    updatePost: builder.mutation<SinglePostResponse, { id: string; content: string }>({
+      query: ({ id, content }) => ({
+        url: POST_URLS.SINGLE(id),
+        method: 'PATCH',
+        body: { content },
+      }),
+      invalidatesTags: ['Post'],
+    }),
+
     // Delete post
     deletePost: builder.mutation<void, string>({
       query: (id) => ({
@@ -218,6 +228,7 @@ export const {
   useSearchPostsQuery,
   useGetPostQuery,
   useCreatePostMutation,
+  useUpdatePostMutation,
   useDeletePostMutation,
   useToggleLikeMutation,
   useAddCommentMutation,
