@@ -299,20 +299,23 @@ export default function FeedScreen() {
           </SafeAreaView>
         </Modal>
 
-        {/* Comment Bottom Sheet */}
-        <CommentSheet
-          ref={bottomSheetRef}
-          post={selectedPost}
-          onClose={() => bottomSheetRef.current?.close()}
-        />
+        {/* Bottom Sheets (Rendered at root for proper overlay) */}
+        <>
+          {/* Comment Bottom Sheet */}
+          <CommentSheet
+            ref={bottomSheetRef}
+            post={selectedPost}
+            onClose={() => bottomSheetRef.current?.close()}
+          />
 
-        {/* Options Bottom Sheet */}
-        <PostOptionsSheet
-          ref={optionsSheetRef}
-          post={selectedOptionsPost}
-          onEdit={handleEditIntent}
-          onClose={() => optionsSheetRef.current?.close()}
-        />
+          {/* Options Bottom Sheet */}
+          <PostOptionsSheet
+            ref={optionsSheetRef}
+            post={selectedOptionsPost}
+            onEdit={handleEditIntent}
+            onClose={() => optionsSheetRef.current?.close()}
+          />
+        </>
       </SafeAreaView>
   );
 }

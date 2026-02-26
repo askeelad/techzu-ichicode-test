@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, forwardRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import BottomSheet, { BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet';
 import { Trash2, Edit2 } from 'lucide-react-native';
 import { COLORS, FONTS, FONT_SIZE, SPACING, RADIUS } from '@constants/index';
 import { Post } from '@store/api/postApi';
@@ -18,8 +18,8 @@ export const PostOptionsSheet = forwardRef<BottomSheet, PostOptionsSheetProps>(
     const insets = useSafeAreaInsets();
     const [deletePost, { isLoading: isDeleting }] = useDeletePostMutation();
 
-    // The snap points for the bottom sheet (only need a small menu size)
-    const snapPoints = useMemo(() => ['25%'], []);
+    // The snap points for the bottom sheet
+    const snapPoints = useMemo(() => [200], []);
 
     const renderBackdrop = useCallback(
       (props: any) => (
@@ -73,7 +73,7 @@ export const PostOptionsSheet = forwardRef<BottomSheet, PostOptionsSheetProps>(
         backgroundStyle={styles.sheetBackground}
         handleIndicatorStyle={styles.handleIndicator}
       >
-        <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, SPACING.lg) }]}>
+        <BottomSheetView style={[styles.container, { paddingBottom: Math.max(insets.bottom, SPACING.lg) }]}>
           <View style={styles.header}>
             <Text style={styles.title}>Post Options</Text>
           </View>
@@ -93,7 +93,7 @@ export const PostOptionsSheet = forwardRef<BottomSheet, PostOptionsSheetProps>(
               <Text style={[styles.optionText, styles.destructiveText]}>Delete</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </BottomSheetView>
       </BottomSheet>
     );
   }
@@ -103,7 +103,7 @@ PostOptionsSheet.displayName = 'PostOptionsSheet';
 
 const styles = StyleSheet.create({
   sheetBackground: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.backgroundSecondary,
     borderTopLeftRadius: RADIUS.xl,
     borderTopRightRadius: RADIUS.xl,
   },
@@ -114,6 +114,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: SPACING.lg,
+    backgroundColor: COLORS.backgroundSecondary,
+    borderTopLeftRadius: RADIUS.xl,
+    borderTopRightRadius: RADIUS.xl,
   },
   header: {
     alignItems: 'center',

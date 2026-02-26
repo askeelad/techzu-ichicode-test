@@ -89,7 +89,11 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onCommentPress, onOpti
           <Text style={styles.timestamp}>{timeAgo(post.created_at)}</Text>
         </View>
         {currentUser?.id === post.author.id && (
-          <TouchableOpacity style={styles.moreBtn} onPress={handleOptions}>
+          <TouchableOpacity 
+            style={styles.moreBtn} 
+            onPress={handleOptions}
+            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+          >
             <MoreHorizontal size={20} color={COLORS.textMuted} />
           </TouchableOpacity>
         )}
