@@ -95,6 +95,33 @@ export const postApi = createApi({
         currentArg?.username !== previousArg?.username,
     }),
 
+    // Search feed/posts
+    searchPosts: builder.query<FeedResponse, { page: number; limit: number; q: string }>({
+      query: ({ page, limit, q }) => {
+        const params = new URLSearchParams({
+          page: String(page),
+          limit: String(limit),
+          q,
+        });
+        return `${POST_URLS.SEARCH}?${params.toString()}`;
+      },
+      providesTags: ['Post'],
+      serializeQueryArgs: ({ queryArgs }) => {
+        return `search-${queryArgs.q}`;
+      },
+      merge: (currentCache, newItems, { arg }) => {
+        if (arg.page === 1) {
+          currentCache.data = newItems.data;
+          currentCache.meta = newItems.meta;
+        } else {
+          currentCache.data.push(...newItems.data);
+          currentCache.meta = newItems.meta;
+        }
+      },
+      forceRefetch: ({ currentArg, previousArg }) =>
+        currentArg?.page !== previousArg?.page || currentArg?.q !== previousArg?.q,
+    }),
+
     // Get single post
     getPost: builder.query<SinglePostResponse, string>({
       query: (id) => POST_URLS.SINGLE(id),
@@ -188,6 +215,7 @@ export const postApi = createApi({
 
 export const {
   useGetFeedQuery,
+  useSearchPostsQuery,
   useGetPostQuery,
   useCreatePostMutation,
   useDeletePostMutation,

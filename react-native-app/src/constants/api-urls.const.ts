@@ -15,6 +15,7 @@ export const AUTH_URLS = {
 // ─── Posts Endpoints ──────────────────────────────────────────────────────────
 export const POST_URLS = {
   FEED: '/posts',
+  SEARCH: '/posts/search',
   SINGLE: (id: string) => `/posts/${id}`,
   CREATE: '/posts',
   DELETE: (id: string) => `/posts/${id}`,

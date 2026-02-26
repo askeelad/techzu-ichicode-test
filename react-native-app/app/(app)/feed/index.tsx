@@ -15,7 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BottomSheet from '@gorhom/bottom-sheet';
 
-import { useGetFeedQuery, useCreatePostMutation, Post } from '@store/api/postApi';
+import { useGetFeedQuery, useSearchPostsQuery, useCreatePostMutation, Post } from '@store/api/postApi';
 import { useGetNotificationsQuery } from '@store/api/notificationApi';
 import { useAppSelector, useAppDispatch, logout } from '@store/index';
 import { storage } from '@utils/storage';
@@ -53,11 +53,23 @@ export default function FeedScreen() {
     return () => clearTimeout(timer);
   }, [searchText]);
 
-  const { data, isFetching, isLoading } = useGetFeedQuery({ 
-    page, 
-    limit: LIMIT,
-    username: debouncedSearch.trim() || undefined
-  });
+  const isSearching = debouncedSearch.trim().length > 0;
+
+  // Regular Feed Query (skips if searching)
+  const feedQuery = useGetFeedQuery(
+    { page, limit: LIMIT },
+    { skip: isSearching }
+  );
+
+  // Search Query (skips if NOT searching)
+  const searchQuery = useSearchPostsQuery(
+    { page, limit: LIMIT, q: debouncedSearch.trim() },
+    { skip: !isSearching }
+  );
+
+  // Combine the active query state
+  const activeQuery = isSearching ? searchQuery : feedQuery;
+  const { data, isFetching, isLoading } = activeQuery;
 
   // ── Create post ─────────────────────────────────────────────────────────────
   const [showCreate, setShowCreate] = useState(false);
@@ -126,7 +138,7 @@ export default function FeedScreen() {
         <View style={styles.searchContainer}>
           <TextInput
             style={styles.searchInput}
-            placeholder="Search by username..."
+            placeholder="Search posts & users..."
             placeholderTextColor={COLORS.textMuted}
             value={searchText}
             onChangeText={setSearchText}
